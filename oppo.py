@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
-"""FM Synth"""
+"""FM Synth with Xbox 360 Controller Interface"""
 import argparse
 import sys
 import random 
 
 import numpy as np
 import sounddevice as sd
+<<<<<<< Updated upstream
 import time as pytime 
+=======
+import pygame
+from pygame.locals import QUIT, JOYBUTTONDOWN, JOYAXISMOTION
+
+>>>>>>> Stashed changes
 
 class Voice:
     def __init__(self, op1, op2):
@@ -136,6 +142,7 @@ def int_or_str(text):
         return text
 
 
+<<<<<<< Updated upstream
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument(
     '-l', '--list-devices', action='store_true',
@@ -155,6 +162,71 @@ parser.add_argument(
     '-a', '--amplitude', type=float, default=0.2,
     help='amplitude (default: %(default)s)')
 args = parser.parse_args(remaining)
+=======
+def xego_interface(voice):
+    pygame.init()
+    screen = pygame.display.set_mode((400, 300))
+    pygame.display.set_caption("Xego Controller Interface")
+    font = pygame.font.Font(None, 36)
+
+    clock = pygame.time.Clock()
+    running = True
+
+    # Initialize joystick
+    pygame.joystick.init()
+    if pygame.joystick.get_count() == 0:
+        print("No joystick detected!")
+        return
+    joystick = pygame.joystick.Joystick(0)
+    joystick.init()
+
+    while running:
+        screen.fill((0, 0, 0))
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                running = False
+            elif event.type == JOYBUTTONDOWN:
+                # Map buttons to actions
+                if event.button == 0:  # Button A
+                    voice.op1.f += 10  # Increase pitch
+                elif event.button == 1:  # Button B
+                    voice.op1.f -= 10  # Decrease pitch
+                elif event.button == 2:  # Button X
+                    voice.op1.k += 0.1  # Increase modulation
+                elif event.button == 3:  # Button Y
+                    voice.op1.k -= 0.1  # Decrease modulation
+                print(f"Button {event.button} pressed")
+            elif event.type == JOYAXISMOTION:
+                # Map axes to continuous changes
+                if event.axis == 0:  # Left stick horizontal
+                    voice.op1.f += event.value * 5  # Adjust pitch
+                elif event.axis == 1:  # Left stick vertical
+                    voice.op1.k += event.value * 0.5  # Adjust modulation
+                print(f"Axis {event.axis} moved to {event.value}")
+
+        # Display joystick state
+        for i in range(joystick.get_numbuttons()):
+            text = font.render(f"Button {i}: {joystick.get_button(i)}", True, (255, 255, 255))
+            screen.blit(text, (20, 20 + i * 20))
+
+        # Display current pitch and modulation
+        pitch_text = font.render(f"Pitch: {voice.op1.f:.2f} Hz", True, (255, 255, 255))
+        modulation_text = font.render(f"Modulation: {voice.op1.k:.2f}", True, (255, 255, 255))
+        screen.blit(pitch_text, (20, 200))
+        screen.blit(modulation_text, (20, 230))
+
+        pygame.display.flip()
+        clock.tick(30)
+
+    pygame.quit()
+
+
+def main():
+    parser = argparse.ArgumentParser(description="FM Synth with Xbox 360 Controller Interface")
+    parser.add_argument('-d', '--device', type=int_or_str, help='output device (numeric ID or substring)')
+    parser.add_argument('-a', '--amplitude', type=float, default=0.2, help='amplitude (default: %(default)s)')
+    args = parser.parse_args()
+>>>>>>> Stashed changes
 
 voice1 = Voice()
 voice2 = Voice()
@@ -168,11 +240,21 @@ try:
             print(status, file=sys.stderr)
         global start_idx
 
+<<<<<<< Updated upstream
         t = (start_idx + np.arange(frames)) / samplerate
         t = t.reshape(-1, 1)
         
         outdata[:] = args.amplitude * voice1.z(t) 
         start_idx += frames
+=======
+        with sd.OutputStream(device=args.device, channels=1, callback=callback, samplerate=samplerate):
+            print("Press Enter to stop...")
+            xego_interface(voice)
+    except KeyboardInterrupt:
+        print("Exiting...")
+    except Exception as e:
+        print(f"Error: {e}")
+>>>>>>> Stashed changes
 
     with sd.OutputStream(device=args.device, channels=1, callback=callback,
                          samplerate=samplerate, latency=0.050):
